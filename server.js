@@ -1,21 +1,38 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
 const cors = require('cors');
+const dotenv = require('dotenv');
 
 dotenv.config();
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const authRoutes  = require('./routes/authRoutes');
-const eventRoutes = require('./routes/eventRoutes');
+// Root route for welcome page
+app.get('/', (req, res) => {
+  res.send('<h1>Welcome to Event Ticketing System API</h1>');
+});
 
-app.use('/api/auth',  authRoutes);    // auth/register, auth/login, auth/me
-app.use('/api/events', eventRoutes);  // events/create (admin only)
+// Routes
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/events', require('./routes/eventRoutes'));
+app.use('/api/bookings', require('./routes/bookingRoutes'));
 
-app.use((req, res) => res.status(404).json({ error: '404 Not Found' }));
+// 404 Handler
+app.use('*', (req, res) => {
+  if (req.headers.accept?.includes('html')) {
+    res.status(404).send('<h1>404 Not Found</h1>');
+  } else {
+    res.status(404).json({ error: '404 Not Found' });
+  }
+});
 
+// MongoDB connection + start server
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => app.listen(process.env.PORT||5050, () => console.log('🔌 Server up')))
-  .catch(err => console.error(err));
+  .then(() => {
+    app.listen(process.env.PORT, () => {
+      console.log('Server running on port ' + process.env.PORT);
+    });
+  })
+  .catch(err => console.log(err));
